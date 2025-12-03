@@ -1,6 +1,7 @@
 {
     "access_key_id": "your_access_key_id",
     "access_key_secret": "your_access_key_secret",
-    "domain": "ai.uih-devops.com"
+    "domain": "ai.uih-devops.com",
+    "feishu_webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
 }
 

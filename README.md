@@ -9,6 +9,7 @@
 - 如果记录不存在，自动创建新记录
 - 如果IP未变化，跳过更新
 - 详细的日志记录
+- 飞书Webhook通知（卡片格式，无论是否更新都通知）
 
 ## 安装依赖
 
@@ -23,12 +24,13 @@ pip install -r requirements.txt
 cp config.json.example config.json
 ```
 
-2. 编辑 `config.json`，填入你的阿里云AccessKey信息：
+2. 编辑 `config.json`，填入你的配置信息：
 ```json
 {
     "access_key_id": "your_access_key_id",
     "access_key_secret": "your_access_key_secret",
-    "domain": "ai.uih-devops.com"
+    "domain": "ai.uih-devops.com",
+    "feishu_webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
 }
 ```
 
@@ -39,6 +41,18 @@ cp config.json.example config.json
 3. 创建AccessKey，获取AccessKey ID和AccessKey Secret
 
 **注意**：为了安全，建议创建一个具有DNS管理权限的子账号，而不是使用主账号的AccessKey。
+
+### 配置飞书Webhook（可选）
+
+1. 在飞书群聊中，点击右上角设置 → 群机器人 → 添加机器人 → 自定义机器人
+2. 设置机器人名称和描述
+3. 复制Webhook地址
+4. 将Webhook地址填入配置文件的 `feishu_webhook_url` 字段
+
+**注意**：
+- 如果不配置 `feishu_webhook_url`，脚本会正常运行但不会发送通知
+- 通知使用卡片格式，包含域名、IP地址、更新状态等信息
+- 无论IP是否更新，都会发送通知（包括"无需更新"的情况）
 
 ## 使用方法
 
@@ -168,9 +182,26 @@ docker run -d --name auto-ddns \
 3. 脚本会自动创建或更新 `ai.uih-devops.com` 的A记录
 4. 默认TTL设置为600秒（10分钟）
 
+## 飞书通知说明
+
+脚本支持通过飞书Webhook发送卡片格式的通知，通知内容包括：
+
+- **域名**：当前更新的域名
+- **当前IP**：获取到的公网IP地址
+- **旧IP**：如果IP发生变化，显示旧IP地址
+- **状态**：更新状态（成功/已更新/无需更新/失败）
+- **更新时间**：操作时间戳
+
+通知会在以下情况发送：
+- ✅ DNS记录创建成功
+- 🔄 DNS记录更新成功（IP变化）
+- ℹ️ IP未变化，无需更新
+- ❌ DNS操作失败
+
 ## 故障排查
 
 1. **无法获取IP地址**：检查网络连接，脚本会尝试多个IP服务
 2. **DNS更新失败**：检查AccessKey权限和域名配置
-3. **查看详细日志**：检查 `ddns.log` 文件
+3. **飞书通知失败**：检查Webhook URL是否正确，网络是否可达
+4. **查看详细日志**：检查 `ddns.log` 文件
 
