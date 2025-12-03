@@ -1,0 +1,48 @@
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置环境变量
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# 安装系统依赖（包括cron）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cron \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制应用代码
+COPY auto_ddns.py .
+
+# 创建日志目录
+RUN mkdir -p /app/logs /var/log
+
+# 设置可执行权限
+RUN chmod +x auto_ddns.py
+
+# 创建cron任务文件
+# 每10分钟执行一次，可以根据需要修改
+RUN echo "*/10 * * * * cd /app && python3 auto_ddns.py >> /var/log/cron.log 2>&1" > /etc/cron.d/ddns-cron
+
+# 设置cron任务文件权限
+RUN chmod 0644 /etc/cron.d/ddns-cron
+
+# 应用cron任务
+RUN crontab /etc/cron.d/ddns-cron
+
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+service cron start\n\
+tail -f /var/log/cron.log' > /app/start.sh && \
+    chmod +x /app/start.sh
+
+# 启动cron服务并保持容器运行
+CMD ["/app/start.sh"]
+

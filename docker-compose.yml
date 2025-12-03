@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # 标准版本：单次执行，需要外部cron调度
+  auto-ddns:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auto-ddns
+    restart: "no"  # 单次执行，不自动重启
+    volumes:
+      # 挂载配置文件（需要提前创建并配置）
+      - ./config.json:/app/config.json:ro
+      # 挂载日志目录
+      - ./logs:/app/logs
+    command: python3 auto_ddns.py
+    # 使用方式：通过外部cron定时执行
+    # */10 * * * * cd /path/to/auto-ddns && docker-compose run --rm auto-ddns
+
+  # 带cron的版本：容器内定时执行
+  auto-ddns-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: auto-ddns-cron
+    restart: unless-stopped
+    volumes:
+      # 挂载配置文件（需要提前创建并配置）
+      - ./config.json:/app/config.json:ro
+      # 挂载日志目录
+      - ./logs:/app/logs
+    # 容器内cron每10分钟自动执行
+    # 使用方式：docker-compose up -d auto-ddns-cron
+
